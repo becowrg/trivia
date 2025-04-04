@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #d6ba5c;
+            color: white;
+            display: flex;
+            flex-direction: column; /* Allow stacking elements */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .container { /* General container for centering */
+            background-color: white;
+            color: #333;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            margin-bottom: 1rem; /* Space below containers */
+        }
+        .hidden {
+            display: none;
+        }
+
+        /* Button Styles */
+        .action-btn {
+            background-color: #46178f; /* Default Purple */
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: none;
+            margin: 0.5rem;
+        }
+        .action-btn:hover {
+            background-color: #3a1376;
+        }
+        #import-label.action-btn { background-color: #1368ce; } /* Blue */
+        #import-label.action-btn:hover { background-color: #0f52a1; }
+        #manage-questions-btn.action-btn { background-color: #d89e00; } /* Yellow */
+        #manage-questions-btn.action-btn:hover { background-color: #b38200; }
+        #restart-btn.action-btn, #save-start-quiz-btn.action-btn { background-color: #26890c; } /* Green */
+        #restart-btn.action-btn:hover, #save-start-quiz-btn.action-btn:hover { background-color: #1d6a0a; }
+        .delete-btn {
+             background-color: #e21b3c; /* Red */
+             color: white;
+             padding: 0.3rem 0.6rem;
+             font-size: 0.8rem;
+             border-radius: 0.3rem;
+             border: none;
+             cursor: pointer;
+             margin-left: 1rem;
+        }
+         .delete-btn:hover {
+             background-color: #b81630;
+         }
+
+
+        /* Start Screen Styles */
+        #start-screen h2 {
+            color: #46178f;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Quiz Container Styles */
+        .question-header { background-color: #f2f2f2; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem; }
+        .question-text { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; }
+        .progress-info { font-size: 0.9rem; color: #666; }
+        .answers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .answer-btn { display: flex; align-items: center; justify-content: center; padding: 1.5rem; border: none; border-radius: 0.5rem; font-size: 1.2rem; font-weight: 500; color: white; cursor: pointer; transition: transform 0.2s ease, background-color 0.3s ease; min-height: 100px; }
+        .answer-btn:hover { transform: scale(1.03); }
+        .answer-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .bg-red-500 { background-color: #e21b3c; }
+        .bg-blue-500 { background-color: #1368ce; }
+        .bg-yellow-500 { background-color: #d89e00; }
+        .bg-green-500 { background-color: #26890c; }
+        .correct { background-color: #28a745 !important; box-shadow: 0 0 15px rgba(40, 167, 69, 0.7); }
+        .incorrect { background-color: #dc3545 !important; opacity: 0.6 !important; }
+        .correct-indicator::after { content: ' ✔'; font-weight: bold; color: white; }
+        .score-container { margin-top: 2rem; font-size: 1.2rem; font-weight: 600; }
+
+        /* Final results */
+        .results-container h2 { font-size: 2rem; margin-bottom: 1rem; color: #46178f; }
+        .results-container p { font-size: 1.3rem; margin-bottom: 1.5rem; }
+
+        /* Question Management Screen Styles */
+        #manage-questions-screen h2 { color: #46178f; margin-bottom: 1.5rem;}
+        #add-question-form {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        #add-question-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+        }
+        #add-question-form input[type="text"],
+        #add-question-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 0.3rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box; /* Include padding in width */
+        }
+         #add-question-form textarea {
+             min-height: 80px; /* Make question text area larger */
+         }
+        .answer-option-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .answer-option-group input[type="radio"] {
+            margin-right: 0.75rem;
+            width: auto; /* Don't make radio full width */
+             accent-color: #46178f; /* Style radio button */
+        }
+         .answer-option-group input[type="text"] {
+             flex-grow: 1; /* Allow text input to take remaining space */
+             margin-bottom: 0; /* Remove bottom margin within group */
+         }
+        #managed-questions-list {
+            margin-top: 1.5rem;
+            text-align: left;
+            max-height: 300px; /* Limit height and add scroll */
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: #f8f9fa;
+        }
+        .managed-question-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .managed-question-item:last-child {
+            border-bottom: none;
+        }
+        .managed-question-item span {
+             max-width: 80%; /* Prevent long text pushing button out */
+             overflow: hidden;
+             text-overflow: ellipsis;
+             white-space: nowrap;
+        }
+
+         /* Simple Message Box */
+        #message-box { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+        #message-box.show { opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="container">
+        <h2>Welcome to Quiz!</h2>
+        <p>Load default, import, or create your own questions.</p>
+        <div class="start-options">
+            <button id="load-default-btn" class="action-btn">Load Default Questions</button>
+            <label for="import-file" id="import-label" class="action-btn">Import Questions (JSON)</label>
+            <input type="file" id="import-file" accept=".json" class="hidden">
+             <button id="manage-questions-btn" class="action-btn">Manage Questions</button>
+        </div>
+    </div>
+
+     <div id="manage-questions-screen" class="container hidden">
+        <h2>Manage Questions</h2>
+
+        <form id="add-question-form">
+            <label for="new-question-text">Question:</label>
+            <textarea id="new-question-text" required></textarea>
+
+            <label>Answers (Select the correct one):</label>
+            <div class="answer-option-group">
+                <input type="radio" id="correct-answer-1" name="correct-answer" value="0" required>
+                <input type="text" id="answer-1" placeholder="Answer 1" required>
+            </div>
+            <div class="answer-option-group">
+                <input type="radio" id="correct-answer-2" name="correct-answer" value="1">
+                <input type="text" id="answer-2" placeholder="Answer 2" required>
+            </div>
+            <div class="answer-option-group">
+                <input type="radio" id="correct-answer-3" name="correct-answer" value="2">
+                <input type="text" id="answer-3" placeholder="Answer 3" required>
+            </div>
+            <div class="answer-option-group">
+                <input type="radio" id="correct-answer-4" name="correct-answer" value="3">
+                <input type="text" id="answer-4" placeholder="Answer 4" required>
+            </div>
+
+            <button type="submit" class="action-btn" style="background-color: #1368ce;">Add Question</button>
+        </form>
+
+        <h3>Current Questions (<span id="managed-q-count">0</span>):</h3>
+        <div id="managed-questions-list">
+            <p>No questions added yet.</p>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+             <button id="save-start-quiz-btn" class="action-btn">Save & Start Quiz</button>
+             <button id="manage-back-to-main-btn" class="action-btn">Back to Main Menu</button>
+        </div>
+    </div>
+
+
+    <div id="quiz-container" class="container hidden">
+        <div id="question-area" class="question-header">
+            <div id="progress" class="progress-info mb-2">Question 1 / N</div>
+            <div id="question" class="question-text">Loading question...</div>
+        </div>
+        <div id="answers" class="answers-grid">
+            </div>
+        <div id="score-container" class="score-container mt-6">
+            Score: <span id="score">0</span>
+        </div>
+    </div>
+
+    <div id="results-container" class="container hidden">
+        <h2>Quiz Complete!</h2>
+        <p>Your final score is: <span id="final-score">0</span> out of <span id="total-questions">0</span></p>
+        <button id="restart-btn" class="action-btn">Play Again (Same Questions)</button>
+        <button id="export-btn" class="action-btn">Export These Questions (JSON)</button>
+        <button id="main-menu-btn" class="action-btn">Back to Main Menu</button>
+    </div>
+
+    <div id="message-box"></div>
+
+    <script>
+        // --- Default Quiz Data ---
+        const defaultQuestions = [
+            { question: "What is the capital of Canada?", answers: ["Toronto", "Ottawa", "Vancouver", "Montreal"], correctAnswer: "Ottawa", colors: ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-500"] },
+            { question: "Which planet is known as the Red Planet?", answers: ["Earth", "Mars", "Jupiter", "Saturn"], correctAnswer: "Mars", colors: ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-500"] },
+            { question: "What is the largest ocean on Earth?", answers: ["Atlantic", "Indian", "Arctic", "Pacific"], correctAnswer: "Pacific", colors: ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-500"] },
+            { question: "What is 2 + 2 * 2?", answers: ["4", "6", "8", "10"], correctAnswer: "6", colors: ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-500"] },
+            { question: "Who wrote 'Hamlet'?", answers: ["Charles Dickens", "William Shakespeare", "Leo Tolstoy", "Mark Twain"], correctAnswer: "William Shakespeare", colors: ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-500"] }
+        ];
+        const defaultColors = ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-500"];
+
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const manageQuestionsScreen = document.getElementById('manage-questions-screen');
+        const quizContainer = document.getElementById('quiz-container');
+        const resultsContainer = document.getElementById('results-container');
+        // Quiz elements
+        const questionElement = document.getElementById('question');
+        const progressElement = document.getElementById('progress');
+        const answersElement = document.getElementById('answers');
+        const scoreElement = document.getElementById('score');
+        // Results elements
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const messageBox = document.getElementById('message-box');
+        // Start screen buttons
+        const loadDefaultBtn = document.getElementById('load-default-btn');
+        const importFileBtn = document.getElementById('import-file');
+        const manageQuestionsBtn = document.getElementById('manage-questions-btn');
+        // Results screen buttons
+        const exportBtn = document.getElementById('export-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const mainMenuBtn = document.getElementById('main-menu-btn');
+        // Manage screen elements
+        const addQuestionForm = document.getElementById('add-question-form');
+        const newQuestionText = document.getElementById('new-question-text');
+        const answerInputs = [
+            document.getElementById('answer-1'),
+            document.getElementById('answer-2'),
+            document.getElementById('answer-3'),
+            document.getElementById('answer-4')
+        ];
+        const correctAnswerRadios = document.getElementsByName('correct-answer');
+        const managedQuestionsList = document.getElementById('managed-questions-list');
+        const managedQCount = document.getElementById('managed-q-count');
+        const saveStartQuizBtn = document.getElementById('save-start-quiz-btn');
+        const manageBackToMainBtn = document.getElementById('manage-back-to-main-btn');
+
+
+        // --- Game State ---
+        let questions = []; // Holds the current set of questions being used (default, imported, or managed)
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answerSelected = false;
+
+        // --- Functions ---
+
+        // Show temporary messages
+        function showMessage(text, duration = 1500) { /* ... (no changes) ... */
+            messageBox.textContent = text;
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, duration);
+        }
+
+        // Validate imported question structure
+        function validateQuestions(data) { /* ... (no changes) ... */
+            if (!Array.isArray(data)) return false;
+            return data.every(q =>
+                typeof q === 'object' &&
+                q !== null &&
+                typeof q.question === 'string' &&
+                Array.isArray(q.answers) && q.answers.length >= 2 && // Need at least 2 answers
+                q.answers.every(a => typeof a === 'string') &&
+                typeof q.correctAnswer === 'string' &&
+                q.answers.includes(q.correctAnswer) &&
+                (!q.colors || (Array.isArray(q.colors) && q.colors.every(c => typeof c === 'string')))
+            );
+        }
+
+         // --- Screen Navigation ---
+        function showScreen(screenToShow) {
+            startScreen.classList.add('hidden');
+            manageQuestionsScreen.classList.add('hidden');
+            quizContainer.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
+            screenToShow.classList.remove('hidden');
+        }
+
+        function showMainMenu() {
+             // Clear any temporary question set when going to main menu
+             questions = [];
+             importFileBtn.value = ''; // Reset file input
+             showScreen(startScreen);
+        }
+
+        function showManageScreen() {
+            // Start management with a clean slate or load defaults? Let's start clean.
+            questions = []; // Reset questions when entering management
+            displayManagedQuestions(); // Update the list display
+            addQuestionForm.reset(); // Clear the form
+            showScreen(manageQuestionsScreen);
+        }
+
+
+        // --- Quiz Logic ---
+        function startQuiz() {
+            if (!validateQuestions(questions)) { // Validate before starting
+                 showMessage("Cannot start quiz. Questions are invalid or empty. Please add/load valid questions.", 3000);
+                 // Optionally go back to management or main menu
+                 // showManageScreen(); // Or showMainMenu();
+                 return;
+            }
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreElement.textContent = score;
+            showScreen(quizContainer);
+            loadQuestion();
+        }
+
+        function loadQuestion() { /* ... (no changes needed, uses `questions` array) ... */
+            if (currentQuestionIndex >= questions.length) {
+                showResults();
+                return;
+            }
+            answerSelected = false;
+            const currentQuestion = questions[currentQuestionIndex];
+
+            questionElement.textContent = currentQuestion.question;
+            progressElement.textContent = `Question ${currentQuestionIndex + 1} / ${questions.length}`;
+            answersElement.innerHTML = ''; // Clear previous buttons
+
+            const colors = currentQuestion.colors || defaultColors; // Use default colors if missing
+
+            currentQuestion.answers.forEach((answer, index) => {
+                const button = document.createElement('button');
+                button.textContent = answer;
+                button.classList.add('answer-btn', colors[index % colors.length]);
+                button.dataset.answer = answer;
+                button.addEventListener('click', selectAnswer);
+                answersElement.appendChild(button);
+            });
+        }
+
+        function selectAnswer(event) { /* ... (no changes needed) ... */
+            if (answerSelected) return;
+            answerSelected = true;
+
+            const selectedButton = event.target;
+            const selectedAnswer = selectedButton.dataset.answer;
+            const correctAnswer = questions[currentQuestionIndex].correctAnswer;
+
+            const allButtons = answersElement.querySelectorAll('.answer-btn');
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.dataset.answer === correctAnswer) {
+                    btn.classList.add('correct', 'correct-indicator');
+                } else if (btn === selectedButton) {
+                    btn.classList.add('incorrect');
+                } else {
+                     btn.classList.add('incorrect'); // Dim others
+                }
+            });
+
+            if (selectedAnswer === correctAnswer) {
+                score++;
+                scoreElement.textContent = score;
+                showMessage("Correct!");
+            } else {
+                 showMessage(`Incorrect! The answer was ${correctAnswer}`);
+            }
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    loadQuestion();
+                } else {
+                    showResults();
+                }
+            }, 2000);
+        }
+
+        function showResults() {
+            finalScoreElement.textContent = score;
+            totalQuestionsElement.textContent = questions.length;
+            showScreen(resultsContainer);
+        }
+
+
+        // --- Import/Export Logic ---
+        function exportQuestions() { /* ... (no changes needed) ... */
+             if (questions.length === 0) {
+                showMessage("No questions loaded to export.", 2000);
+                return;
+            }
+            const jsonString = JSON.stringify(questions, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'quiz-questions.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage("Questions exported!", 1500);
+        }
+
+        function handleFileImport(event) { /* ... (Starts quiz immediately after import) ... */
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (validateQuestions(importedData)) {
+                        questions = importedData; // Replace current questions
+                        showMessage(`Successfully imported ${questions.length} questions!`, 2000);
+                        startQuiz(); // Start quiz with imported questions
+                    } else {
+                        showMessage("Invalid JSON format or structure. Please check the file.", 3000);
+                        importFileBtn.value = '';
+                    }
+                } catch (error) {
+                    showMessage("Error reading or parsing the file.", 3000);
+                    console.error("Import error:", error);
+                    importFileBtn.value = '';
+                }
+            };
+            reader.onerror = function() {
+                 showMessage("Error reading the file.", 3000);
+                 importFileBtn.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+
+        // --- Question Management Logic ---
+
+        // Display the list of manually managed questions
+        function displayManagedQuestions() {
+            managedQuestionsList.innerHTML = ''; // Clear current list
+            managedQCount.textContent = questions.length;
+
+            if (questions.length === 0) {
+                managedQuestionsList.innerHTML = '<p>No questions added yet.</p>';
+                return;
+            }
+
+            questions.forEach((q, index) => {
+                const item = document.createElement('div');
+                item.classList.add('managed-question-item');
+
+                const text = document.createElement('span');
+                text.textContent = `${index + 1}. ${q.question.substring(0, 50)}${q.question.length > 50 ? '...' : ''} (Correct: ${q.correctAnswer.substring(0, 20)}${q.correctAnswer.length > 20 ? '...' : ''})`;
+                text.title = `Q: ${q.question}\nA: ${q.answers.join(', ')}\nCorrect: ${q.correctAnswer}`; // Tooltip for full details
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.dataset.index = index; // Store index to know which one to delete
+                deleteBtn.addEventListener('click', handleDeleteQuestion);
+
+                item.appendChild(text);
+                item.appendChild(deleteBtn);
+                managedQuestionsList.appendChild(item);
+            });
+        }
+
+        // Handle form submission for adding a new question
+        function handleAddQuestion(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const questionText = newQuestionText.value.trim();
+            const answers = answerInputs.map(input => input.value.trim()).filter(answer => answer !== ''); // Get non-empty answers
+            let correctAnswerIndex = -1;
+            for (let i = 0; i < correctAnswerRadios.length; i++) {
+                 if (correctAnswerRadios[i].checked) {
+                     correctAnswerIndex = parseInt(correctAnswerRadios[i].value);
+                     break;
+                 }
+            }
+
+            // Validation
+            if (!questionText) {
+                showMessage("Please enter question text.", 2000);
+                return;
+            }
+             if (answers.length < 2) {
+                 showMessage("Please provide at least two non-empty answers.", 2000);
+                 return;
+             }
+            if (correctAnswerIndex === -1 || correctAnswerIndex >= answers.length) {
+                 showMessage("Please select a valid correct answer from the provided options.", 2000);
+                 return;
+            }
+
+            const correctAnswer = answers[correctAnswerIndex];
+
+            // Create new question object
+            const newQuestion = {
+                question: questionText,
+                answers: answers,
+                correctAnswer: correctAnswer,
+                colors: defaultColors.slice(0, answers.length) // Assign colors based on number of answers
+            };
+
+            // Add to the questions array (which is currently scoped to the management screen)
+            questions.push(newQuestion);
+
+            // Update UI
+            displayManagedQuestions();
+            showMessage("Question added!", 1000);
+            addQuestionForm.reset(); // Clear the form for the next entry
+             newQuestionText.focus(); // Focus back on question input
+        }
+
+        // Handle deleting a question from the managed list
+        function handleDeleteQuestion(event) {
+            const indexToDelete = parseInt(event.target.dataset.index);
+            if (!isNaN(indexToDelete) && indexToDelete >= 0 && indexToDelete < questions.length) {
+                questions.splice(indexToDelete, 1); // Remove the question from the array
+                displayManagedQuestions(); // Re-render the list
+                showMessage("Question deleted.", 1000);
+            }
+        }
+
+
+        // --- Event Listeners ---
+        // Start Screen
+        loadDefaultBtn.addEventListener('click', () => {
+            questions = JSON.parse(JSON.stringify(defaultQuestions)); // Deep copy
+            showMessage("Default questions loaded.", 1500);
+            startQuiz();
+        });
+        importFileBtn.addEventListener('change', handleFileImport);
+        manageQuestionsBtn.addEventListener('click', showManageScreen);
+
+        // Manage Screen
+        addQuestionForm.addEventListener('submit', handleAddQuestion);
+        saveStartQuizBtn.addEventListener('click', startQuiz); // Uses the 'questions' array populated in this screen
+        manageBackToMainBtn.addEventListener('click', showMainMenu);
+
+        // Results Screen
+        exportBtn.addEventListener('click', exportQuestions);
+        restartBtn.addEventListener('click', startQuiz); // Restarts with the same set used previously
+        mainMenuBtn.addEventListener('click', showMainMenu);
+
+        // --- Initial State ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showMainMenu(); // Start at the main menu
+        });
+
+    </script>
+</body>
+</html>
