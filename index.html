@@ -9,7 +9,7 @@
         /* Custom styles */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #e0c46e;
+            background-color: #e0bd4a;
             color: white;
             display: flex;
             flex-direction: column; /* Allow stacking elements */
@@ -58,7 +58,7 @@
         #manage-questions-btn.action-btn { background-color: #d89e00; } /* Yellow */
         #manage-questions-btn.action-btn:hover { background-color: #b38200; }
         /* Make Start/Restart/Save buttons Green */
-        #start-quiz-btn.action-btn, /* New Start Button */
+        #start-quiz-btn.action-btn,
         #restart-btn.action-btn,
         #save-start-quiz-btn.action-btn { background-color: #26890c; }
         #start-quiz-btn.action-btn:hover,
@@ -68,19 +68,29 @@
         .export-btn-color { background-color: #6c757d; } /* Gray */
         .export-btn-color:hover { background-color: #5a6268; }
 
-        .delete-btn {
-             background-color: #e21b3c; /* Red */
+        /* Small action buttons (Delete, Up, Down) */
+        .small-action-btn {
+             background-color: #6c757d; /* Gray */
              color: white;
              padding: 0.3rem 0.6rem;
-             font-size: 0.8rem;
+             font-size: 0.9rem; /* Slightly larger for arrows */
+             line-height: 1; /* Ensure arrows align well */
              border-radius: 0.3rem;
              border: none;
              cursor: pointer;
-             margin-left: 1rem;
+             margin-left: 0.5rem; /* Space between small buttons */
+             min-width: 30px; /* Ensure buttons have some width */
+             text-align: center;
         }
-         .delete-btn:hover {
-             background-color: #b81630;
+         .small-action-btn:hover {
+             background-color: #5a6268;
          }
+         .small-action-btn:disabled {
+             opacity: 0.5;
+             cursor: not-allowed;
+         }
+        .delete-btn { background-color: #e21b3c; } /* Red */
+        .delete-btn:hover { background-color: #b81630; }
 
 
         /* Start Screen Styles */
@@ -131,9 +141,28 @@
         .answer-option-group input[type="radio"] { margin-right: 0.75rem; width: auto; accent-color: #46178f; }
         .answer-option-group input[type="text"] { flex-grow: 1; margin-bottom: 0; }
         #managed-questions-list { margin-top: 1.5rem; text-align: left; max-height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 1rem; border-radius: 0.5rem; background-color: #f8f9fa; }
-        .managed-question-item { padding: 0.75rem; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .managed-question-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem; /* Add gap between text and buttons */
+         }
         .managed-question-item:last-child { border-bottom: none; }
-        .managed-question-item span { max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .managed-question-text {
+             flex-grow: 1; /* Allow text to take available space */
+             overflow: hidden;
+             text-overflow: ellipsis;
+             white-space: nowrap;
+             margin-right: 0.5rem; /* Space before buttons */
+        }
+        .managed-question-actions {
+             display: flex; /* Group action buttons */
+             align-items: center;
+             flex-shrink: 0; /* Prevent buttons from shrinking */
+        }
+
 
          /* Simple Message Box */
         #message-box { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
@@ -170,6 +199,26 @@
                  padding: 1rem; /* Adjust padding */
                  font-size: 1.1rem; /* Slightly smaller font */
              }
+
+             /* Adjust managed question list items for mobile */
+             .managed-question-item {
+                 flex-wrap: wrap; /* Allow wrapping if needed */
+             }
+             .managed-question-text {
+                 /* Allow text to take full width initially */
+                 width: 100%;
+                 margin-bottom: 0.5rem; /* Space below text before buttons */
+                 white-space: normal; /* Allow text wrapping */
+                 max-width: 100%;
+             }
+             .managed-question-actions {
+                 width: 100%; /* Make actions take full width */
+                 justify-content: flex-end; /* Align buttons to the right */
+             }
+             .small-action-btn {
+                 margin-left: 0.75rem; /* Increase space between buttons on mobile */
+             }
+
         }
 
     </style>
@@ -177,12 +226,14 @@
 <body>
     <div id="start-screen" class="container">
         <h2>Welcome to Quiz!</h2>
-        <p>Load, import, or manage questions, then start the quiz.</p> <div class="start-options">
+        <p>Load, import, or manage questions, then start the quiz.</p>
+        <div class="start-options">
             <button id="load-default-btn" class="action-btn">Load Default Questions</button>
             <label for="import-file" id="import-label" class="action-btn">Import Questions (JSON)</label>
             <input type="file" id="import-file" accept=".json" class="hidden">
             <button id="manage-questions-btn" class="action-btn">Manage Questions</button>
-            <button id="start-quiz-btn" class="action-btn">Start Quiz</button> </div>
+            <button id="start-quiz-btn" class="action-btn">Start Quiz</button>
+        </div>
     </div>
 
      <div id="manage-questions-screen" class="container hidden">
@@ -279,7 +330,7 @@
         const loadDefaultBtn = document.getElementById('load-default-btn');
         const importFileBtn = document.getElementById('import-file');
         const manageQuestionsBtn = document.getElementById('manage-questions-btn');
-        const startQuizBtn = document.getElementById('start-quiz-btn'); // New button reference
+        const startQuizBtn = document.getElementById('start-quiz-btn');
         // Results screen buttons
         const exportBtn = document.getElementById('export-btn');
         const restartBtn = document.getElementById('restart-btn');
@@ -310,7 +361,7 @@
         // --- Functions ---
 
         // Show temporary messages
-        function showMessage(text, duration = 1500) {
+        function showMessage(text, duration = 1500) { /* ... no change ... */
             messageBox.textContent = text;
             messageBox.classList.add('show');
             setTimeout(() => {
@@ -319,7 +370,7 @@
         }
 
         // Validate question structure
-        function validateQuestions(data) {
+        function validateQuestions(data) { /* ... no change ... */
              if (!Array.isArray(data)) return false;
              return data.every(q =>
                  typeof q === 'object' &&
@@ -334,7 +385,7 @@
         }
 
          // --- Screen Navigation ---
-        function showScreen(screenToShow) {
+        function showScreen(screenToShow) { /* ... no change ... */
             startScreen.classList.add('hidden');
             manageQuestionsScreen.classList.add('hidden');
             quizContainer.classList.add('hidden');
@@ -343,13 +394,13 @@
         }
 
         // Return to main menu - Questions persist
-        function showMainMenu() {
+        function showMainMenu() { /* ... no change ... */
              importFileBtn.value = '';
              showScreen(startScreen);
         }
 
         // Show management screen - Uses the currently active 'questions' array
-        function showManageScreen() {
+        function showManageScreen() { /* ... no change ... */
             displayManagedQuestions();
             addQuestionForm.reset();
             showScreen(manageQuestionsScreen);
@@ -357,21 +408,19 @@
 
 
         // --- Quiz Logic ---
-        // This function is now called ONLY by the Start buttons
-        function startQuiz() {
-            // Validate the 'questions' array AND check if it's empty before starting
+        function startQuiz() { /* ... no change ... */
             if (!validateQuestions(questions) || questions.length === 0) {
                  showMessage("No valid questions loaded. Please load default, import, or manage questions first.", 3000);
-                 return; // Stay on the current screen (likely main menu or manage screen)
+                 return;
             }
             currentQuestionIndex = 0;
             score = 0;
             scoreElement.textContent = score;
-            showScreen(quizContainer); // Show the quiz screen
+            showScreen(quizContainer);
             loadQuestion();
         }
 
-        function loadQuestion() {
+        function loadQuestion() { /* ... no change ... */
              if (currentQuestionIndex >= questions.length) {
                 showResults();
                 return;
@@ -395,7 +444,7 @@
             });
         }
 
-        function selectAnswer(event) {
+        function selectAnswer(event) { /* ... no change ... */
             if (answerSelected) return;
             answerSelected = true;
 
@@ -433,7 +482,7 @@
             }, 2000);
         }
 
-        function showResults() {
+        function showResults() { /* ... no change ... */
             finalScoreElement.textContent = score;
             totalQuestionsElement.textContent = questions.length;
             showScreen(resultsContainer);
@@ -441,7 +490,7 @@
 
 
         // --- Generic Export Function ---
-        function triggerExport(questionsToExport, defaultFilename = 'quiz-questions.json') {
+        function triggerExport(questionsToExport, defaultFilename = 'quiz-questions.json') { /* ... no change ... */
              if (!Array.isArray(questionsToExport) || questionsToExport.length === 0) {
                  showMessage("No questions available to export.", 2000);
                  return false;
@@ -467,14 +516,10 @@
         }
 
         // --- Import/Export Logic ---
-
-        // Exports the *currently active* set of questions
-        function exportCurrentQuestions() {
+        function exportCurrentQuestions() { /* ... no change ... */
              triggerExport(questions);
         }
-
-        // Imports questions but does NOT automatically start the quiz anymore
-        function handleFileImport(event) {
+        function handleFileImport(event) { /* ... no change ... */
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
@@ -483,9 +528,8 @@
                     const importedData = JSON.parse(e.target.result);
                     if (validateQuestions(importedData)) {
                          if (importedData.length > 0) {
-                             questions = importedData; // Overwrite current questions
+                             questions = importedData;
                              showMessage(`Successfully imported ${questions.length} questions! Ready to start.`, 2500);
-                             // **Removed** startQuiz();
                          } else {
                               showMessage("Imported file is valid but contains no questions.", 3000);
                               questions = [];
@@ -509,37 +553,68 @@
 
 
         // --- Question Management Logic ---
+
+        // **UPDATED** Display the list of managed questions with reorder buttons
         function displayManagedQuestions() {
-             managedQuestionsList.innerHTML = '';
-             managedQCount.textContent = questions.length;
+            managedQuestionsList.innerHTML = ''; // Clear current list
+            managedQCount.textContent = questions.length;
 
-             if (questions.length === 0) {
-                 managedQuestionsList.innerHTML = '<p>No questions added yet.</p>';
-                 return;
-             }
+            if (questions.length === 0) {
+                managedQuestionsList.innerHTML = '<p>No questions added yet.</p>';
+                return;
+            }
 
-             questions.forEach((q, index) => {
-                 const item = document.createElement('div');
-                 item.classList.add('managed-question-item');
+            questions.forEach((q, index) => {
+                const item = document.createElement('div');
+                item.classList.add('managed-question-item');
 
-                 const text = document.createElement('span');
-                 const correctAnsDisplay = q.correctAnswer.substring(0, 20) + (q.correctAnswer.length > 20 ? '...' : '');
-                 text.textContent = `${index + 1}. ${q.question.substring(0, 50)}${q.question.length > 50 ? '...' : ''} (Correct: ${correctAnsDisplay})`;
-                 text.title = `Q: ${q.question}\nA: ${q.answers.join(', ')}\nCorrect: ${q.correctAnswer}`;
+                // Question Text
+                const text = document.createElement('span');
+                text.classList.add('managed-question-text'); // Added class for flex sizing
+                const correctAnsDisplay = q.correctAnswer.substring(0, 20) + (q.correctAnswer.length > 20 ? '...' : '');
+                text.textContent = `${index + 1}. ${q.question.substring(0, 50)}${q.question.length > 50 ? '...' : ''} (Correct: ${correctAnsDisplay})`;
+                text.title = `Q: ${q.question}\nA: ${q.answers.join(', ')}\nCorrect: ${q.correctAnswer}`;
+                item.appendChild(text);
 
-                 const deleteBtn = document.createElement('button');
-                 deleteBtn.textContent = 'Delete';
-                 deleteBtn.classList.add('delete-btn');
-                 deleteBtn.dataset.index = index;
-                 deleteBtn.addEventListener('click', handleDeleteQuestion);
+                // Action Buttons Container
+                const actions = document.createElement('div');
+                actions.classList.add('managed-question-actions');
 
-                 item.appendChild(text);
-                 item.appendChild(deleteBtn);
-                 managedQuestionsList.appendChild(item);
-             });
+                // Move Up Button
+                const upBtn = document.createElement('button');
+                upBtn.innerHTML = '&#9650;'; // Up arrow ▲
+                upBtn.classList.add('small-action-btn', 'move-up-btn');
+                upBtn.dataset.index = index;
+                upBtn.title = "Move Up";
+                upBtn.disabled = (index === 0); // Disable if first item
+                upBtn.addEventListener('click', handleMoveQuestionUp);
+                actions.appendChild(upBtn);
+
+                // Move Down Button
+                const downBtn = document.createElement('button');
+                downBtn.innerHTML = '&#9660;'; // Down arrow ▼
+                downBtn.classList.add('small-action-btn', 'move-down-btn');
+                downBtn.dataset.index = index;
+                downBtn.title = "Move Down";
+                downBtn.disabled = (index === questions.length - 1); // Disable if last item
+                downBtn.addEventListener('click', handleMoveQuestionDown);
+                actions.appendChild(downBtn);
+
+                // Delete Button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete'; // Or use an icon/symbol
+                deleteBtn.classList.add('small-action-btn', 'delete-btn');
+                deleteBtn.dataset.index = index;
+                deleteBtn.title = "Delete Question";
+                deleteBtn.addEventListener('click', handleDeleteQuestion);
+                actions.appendChild(deleteBtn);
+
+                item.appendChild(actions); // Add button group to item
+                managedQuestionsList.appendChild(item); // Add item to list
+            });
         }
 
-        function handleAddQuestion(event) {
+        function handleAddQuestion(event) { /* ... no change ... */
             event.preventDefault();
 
             const questionText = newQuestionText.value.trim();
@@ -584,7 +659,7 @@
             newQuestionText.focus();
         }
 
-        function handleDeleteQuestion(event) {
+        function handleDeleteQuestion(event) { /* ... no change ... */
             const indexToDelete = parseInt(event.target.dataset.index);
             if (!isNaN(indexToDelete) && indexToDelete >= 0 && indexToDelete < questions.length) {
                 questions.splice(indexToDelete, 1);
@@ -593,27 +668,47 @@
             }
         }
 
+        // **NEW** Handle moving a question up
+        function handleMoveQuestionUp(event) {
+            const index = parseInt(event.target.dataset.index);
+             if (!isNaN(index) && index > 0) { // Can only move up if not the first item
+                 // Swap with the previous element
+                 [questions[index], questions[index - 1]] = [questions[index - 1], questions[index]];
+                 displayManagedQuestions(); // Re-render the list
+             }
+        }
+
+        // **NEW** Handle moving a question down
+        function handleMoveQuestionDown(event) {
+             const index = parseInt(event.target.dataset.index);
+             if (!isNaN(index) && index < questions.length - 1) { // Can only move down if not the last item
+                  // Swap with the next element
+                 [questions[index], questions[index + 1]] = [questions[index + 1], questions[index]];
+                 displayManagedQuestions(); // Re-render the list
+             }
+        }
+
 
         // --- Event Listeners ---
         // Start Screen
         loadDefaultBtn.addEventListener('click', () => {
-            questions = JSON.parse(JSON.stringify(defaultQuestions)); // Overwrite current questions
+            questions = JSON.parse(JSON.stringify(defaultQuestions));
             showMessage("Default questions loaded. Ready to start.", 2500);
-            // **Removed** startQuiz();
         });
-        importFileBtn.addEventListener('change', handleFileImport); // Imports, shows message
-        manageQuestionsBtn.addEventListener('click', showManageScreen); // Shows current questions
-        startQuizBtn.addEventListener('click', startQuiz); // New listener to start the quiz
+        importFileBtn.addEventListener('change', handleFileImport);
+        manageQuestionsBtn.addEventListener('click', showManageScreen);
+        startQuizBtn.addEventListener('click', startQuiz);
 
         // Manage Screen
         addQuestionForm.addEventListener('submit', handleAddQuestion);
-        saveStartQuizBtn.addEventListener('click', startQuiz); // Uses current questions
+        saveStartQuizBtn.addEventListener('click', startQuiz);
         exportManageBtn.addEventListener('click', exportCurrentQuestions);
         manageBackToMainBtn.addEventListener('click', showMainMenu);
+        // Note: Event listeners for Up/Down buttons are added dynamically in displayManagedQuestions
 
         // Results Screen
         exportBtn.addEventListener('click', exportCurrentQuestions);
-        restartBtn.addEventListener('click', startQuiz); // Restarts with same questions
+        restartBtn.addEventListener('click', startQuiz);
         mainMenuBtn.addEventListener('click', showMainMenu);
 
         // --- Initial State ---
