@@ -9,7 +9,7 @@
         /* Custom styles */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #e0c46e;
+            background-color: #46178f;
             color: white;
             display: flex;
             flex-direction: column; /* Allow stacking elements */
@@ -57,8 +57,17 @@
         #import-label.action-btn:hover { background-color: #0f52a1; }
         #manage-questions-btn.action-btn { background-color: #d89e00; } /* Yellow */
         #manage-questions-btn.action-btn:hover { background-color: #b38200; }
-        #restart-btn.action-btn, #save-start-quiz-btn.action-btn { background-color: #26890c; } /* Green */
-        #restart-btn.action-btn:hover, #save-start-quiz-btn.action-btn:hover { background-color: #1d6a0a; }
+        /* Make Start/Restart/Save buttons Green */
+        #start-quiz-btn.action-btn, /* New Start Button */
+        #restart-btn.action-btn,
+        #save-start-quiz-btn.action-btn { background-color: #26890c; }
+        #start-quiz-btn.action-btn:hover,
+        #restart-btn.action-btn:hover,
+        #save-start-quiz-btn.action-btn:hover { background-color: #1d6a0a; }
+        /* Export Button Color */
+        .export-btn-color { background-color: #6c757d; } /* Gray */
+        .export-btn-color:hover { background-color: #5a6268; }
+
         .delete-btn {
              background-color: #e21b3c; /* Red */
              color: white;
@@ -79,12 +88,16 @@
             color: #46178f;
             margin-bottom: 1.5rem;
         }
-        .start-options {
+        .start-options, .manage-options, .results-options {
             display: flex; /* Use flexbox for layout */
             flex-wrap: wrap; /* Allow wrapping on medium screens if needed */
             justify-content: center; /* Center buttons */
             gap: 0.5rem; /* Add gap between buttons */
         }
+         .manage-options {
+             margin-top: 1.5rem; /* Add space above manage buttons */
+         }
+
 
         /* Quiz Container Styles */
         .question-header { background-color: #f2f2f2; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem; }
@@ -132,14 +145,16 @@
                  padding: 1.5rem; /* Slightly reduce padding on mobile */
             }
 
-            /* Stack buttons vertically in the start screen */
-            .start-options {
+            /* Stack buttons vertically in button containers */
+            .start-options, .manage-options, .results-options {
                 flex-direction: column;
                 align-items: stretch; /* Make items stretch to full width */
                 gap: 0.75rem; /* Increase gap for vertical stacking */
             }
             .start-options .action-btn,
-            .start-options #import-label.action-btn {
+            .start-options #import-label.action-btn,
+            .manage-options .action-btn,
+            .results-options .action-btn {
                 width: 100%; /* Make buttons full width */
                 margin: 0; /* Remove horizontal margins */
                 padding-top: 1rem; /* Increase padding slightly */
@@ -155,34 +170,19 @@
                  padding: 1rem; /* Adjust padding */
                  font-size: 1.1rem; /* Slightly smaller font */
              }
-
-             /* Adjust results screen buttons */
-             #results-container .action-btn {
-                 display: block; /* Make buttons block level */
-                 width: 100%; /* Full width */
-                 margin-left: 0;
-                 margin-right: 0;
-                 margin-bottom: 0.75rem; /* Add space below each button */
-             }
-              #results-container .action-btn:last-child {
-                 margin-bottom: 0; /* No margin for the last button */
-             }
-
         }
 
     </style>
 </head>
 <body>
-
     <div id="start-screen" class="container">
         <h2>Welcome to Quiz!</h2>
-        <p>Load default, import, or create your own questions.</p>
-        <div class="start-options">
+        <p>Load, import, or manage questions, then start the quiz.</p> <div class="start-options">
             <button id="load-default-btn" class="action-btn">Load Default Questions</button>
             <label for="import-file" id="import-label" class="action-btn">Import Questions (JSON)</label>
             <input type="file" id="import-file" accept=".json" class="hidden">
-             <button id="manage-questions-btn" class="action-btn">Manage Questions</button>
-        </div>
+            <button id="manage-questions-btn" class="action-btn">Manage Questions</button>
+            <button id="start-quiz-btn" class="action-btn">Start Quiz</button> </div>
     </div>
 
      <div id="manage-questions-screen" class="container hidden">
@@ -218,8 +218,9 @@
             <p>No questions added yet.</p>
         </div>
 
-        <div style="margin-top: 1.5rem;">
+        <div class="manage-options">
              <button id="save-start-quiz-btn" class="action-btn">Save & Start Quiz</button>
+             <button id="export-manage-btn" class="action-btn export-btn-color">Export Current Questions</button>
              <button id="manage-back-to-main-btn" class="action-btn">Back to Main Menu</button>
         </div>
     </div>
@@ -242,7 +243,7 @@
         <p>Your final score is: <span id="final-score">0</span> out of <span id="total-questions">0</span></p>
         <div class="results-options">
             <button id="restart-btn" class="action-btn">Play Again (Same Questions)</button>
-            <button id="export-btn" class="action-btn">Export These Questions (JSON)</button>
+            <button id="export-btn" class="action-btn export-btn-color">Export These Questions (JSON)</button>
             <button id="main-menu-btn" class="action-btn">Back to Main Menu</button>
         </div>
     </div>
@@ -278,6 +279,7 @@
         const loadDefaultBtn = document.getElementById('load-default-btn');
         const importFileBtn = document.getElementById('import-file');
         const manageQuestionsBtn = document.getElementById('manage-questions-btn');
+        const startQuizBtn = document.getElementById('start-quiz-btn'); // New button reference
         // Results screen buttons
         const exportBtn = document.getElementById('export-btn');
         const restartBtn = document.getElementById('restart-btn');
@@ -295,11 +297,12 @@
         const managedQuestionsList = document.getElementById('managed-questions-list');
         const managedQCount = document.getElementById('managed-q-count');
         const saveStartQuizBtn = document.getElementById('save-start-quiz-btn');
+        const exportManageBtn = document.getElementById('export-manage-btn');
         const manageBackToMainBtn = document.getElementById('manage-back-to-main-btn');
 
 
         // --- Game State ---
-        let questions = []; // Holds the current set of questions being used (default, imported, or managed)
+        let questions = [];
         let currentQuestionIndex = 0;
         let score = 0;
         let answerSelected = false;
@@ -315,19 +318,19 @@
             }, duration);
         }
 
-        // Validate imported question structure
+        // Validate question structure
         function validateQuestions(data) {
-            if (!Array.isArray(data)) return false;
-            return data.every(q =>
-                typeof q === 'object' &&
-                q !== null &&
-                typeof q.question === 'string' && q.question.trim() !== '' && // Ensure question text is not empty
-                Array.isArray(q.answers) && q.answers.length >= 2 && // Need at least 2 answers
-                q.answers.every(a => typeof a === 'string' && a.trim() !== '') && // Ensure answers are non-empty strings
-                typeof q.correctAnswer === 'string' && q.correctAnswer.trim() !== '' && // Ensure correct answer is non-empty
-                q.answers.includes(q.correctAnswer) &&
-                (!q.colors || (Array.isArray(q.colors) && q.colors.every(c => typeof c === 'string')))
-            );
+             if (!Array.isArray(data)) return false;
+             return data.every(q =>
+                 typeof q === 'object' &&
+                 q !== null &&
+                 typeof q.question === 'string' && q.question.trim() !== '' &&
+                 Array.isArray(q.answers) && q.answers.length >= 2 &&
+                 q.answers.every(a => typeof a === 'string' && a.trim() !== '') &&
+                 typeof q.correctAnswer === 'string' && q.correctAnswer.trim() !== '' &&
+                 q.answers.includes(q.correctAnswer) &&
+                 (!q.colors || (Array.isArray(q.colors) && q.colors.every(c => typeof c === 'string')))
+             );
         }
 
          // --- Screen Navigation ---
@@ -339,14 +342,14 @@
             screenToShow.classList.remove('hidden');
         }
 
+        // Return to main menu - Questions persist
         function showMainMenu() {
-             questions = [];
              importFileBtn.value = '';
              showScreen(startScreen);
         }
 
+        // Show management screen - Uses the currently active 'questions' array
         function showManageScreen() {
-            questions = [];
             displayManagedQuestions();
             addQuestionForm.reset();
             showScreen(manageQuestionsScreen);
@@ -354,20 +357,22 @@
 
 
         // --- Quiz Logic ---
+        // This function is now called ONLY by the Start buttons
         function startQuiz() {
-            if (!validateQuestions(questions)) {
-                 showMessage("Cannot start quiz. Questions are invalid or empty. Please add/load valid questions.", 3000);
-                 return;
+            // Validate the 'questions' array AND check if it's empty before starting
+            if (!validateQuestions(questions) || questions.length === 0) {
+                 showMessage("No valid questions loaded. Please load default, import, or manage questions first.", 3000);
+                 return; // Stay on the current screen (likely main menu or manage screen)
             }
             currentQuestionIndex = 0;
             score = 0;
             scoreElement.textContent = score;
-            showScreen(quizContainer);
+            showScreen(quizContainer); // Show the quiz screen
             loadQuestion();
         }
 
         function loadQuestion() {
-            if (currentQuestionIndex >= questions.length) {
+             if (currentQuestionIndex >= questions.length) {
                 showResults();
                 return;
             }
@@ -435,25 +440,40 @@
         }
 
 
-        // --- Import/Export Logic ---
-        function exportQuestions() {
-             if (questions.length === 0) {
-                showMessage("No questions loaded to export.", 2000);
-                return;
-            }
-            const jsonString = JSON.stringify(questions, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'quiz-questions.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showMessage("Questions exported!", 1500);
+        // --- Generic Export Function ---
+        function triggerExport(questionsToExport, defaultFilename = 'quiz-questions.json') {
+             if (!Array.isArray(questionsToExport) || questionsToExport.length === 0) {
+                 showMessage("No questions available to export.", 2000);
+                 return false;
+             }
+             try {
+                 const jsonString = JSON.stringify(questionsToExport, null, 2);
+                 const blob = new Blob([jsonString], { type: 'application/json' });
+                 const url = URL.createObjectURL(blob);
+                 const a = document.createElement('a');
+                 a.href = url;
+                 a.download = defaultFilename;
+                 document.body.appendChild(a);
+                 a.click();
+                 document.body.removeChild(a);
+                 URL.revokeObjectURL(url);
+                 showMessage("Questions exported successfully!", 1500);
+                 return true;
+             } catch (error) {
+                  console.error("Export Error:", error);
+                  showMessage("Failed to export questions.", 2000);
+                  return false;
+             }
         }
 
+        // --- Import/Export Logic ---
+
+        // Exports the *currently active* set of questions
+        function exportCurrentQuestions() {
+             triggerExport(questions);
+        }
+
+        // Imports questions but does NOT automatically start the quiz anymore
         function handleFileImport(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -462,17 +482,22 @@
                 try {
                     const importedData = JSON.parse(e.target.result);
                     if (validateQuestions(importedData)) {
-                        questions = importedData;
-                        showMessage(`Successfully imported ${questions.length} questions!`, 2000);
-                        startQuiz();
+                         if (importedData.length > 0) {
+                             questions = importedData; // Overwrite current questions
+                             showMessage(`Successfully imported ${questions.length} questions! Ready to start.`, 2500);
+                             // **Removed** startQuiz();
+                         } else {
+                              showMessage("Imported file is valid but contains no questions.", 3000);
+                              questions = [];
+                         }
                     } else {
-                        showMessage("Invalid JSON format or structure. Please check the file.", 3000);
-                        importFileBtn.value = '';
+                         showMessage("Invalid JSON format or structure. Please check the file.", 3000);
                     }
                 } catch (error) {
                     showMessage("Error reading or parsing the file.", 3000);
                     console.error("Import error:", error);
-                    importFileBtn.value = '';
+                } finally {
+                     importFileBtn.value = '';
                 }
             };
             reader.onerror = function() {
@@ -485,85 +510,69 @@
 
         // --- Question Management Logic ---
         function displayManagedQuestions() {
-            managedQuestionsList.innerHTML = ''; // Clear current list
-            managedQCount.textContent = questions.length;
+             managedQuestionsList.innerHTML = '';
+             managedQCount.textContent = questions.length;
 
-            if (questions.length === 0) {
-                managedQuestionsList.innerHTML = '<p>No questions added yet.</p>';
-                return;
-            }
+             if (questions.length === 0) {
+                 managedQuestionsList.innerHTML = '<p>No questions added yet.</p>';
+                 return;
+             }
 
-            questions.forEach((q, index) => {
-                const item = document.createElement('div');
-                item.classList.add('managed-question-item');
+             questions.forEach((q, index) => {
+                 const item = document.createElement('div');
+                 item.classList.add('managed-question-item');
 
-                const text = document.createElement('span');
-                // Ensure correct answer display handles potential trimming
-                const correctAnsDisplay = q.correctAnswer.substring(0, 20) + (q.correctAnswer.length > 20 ? '...' : '');
-                text.textContent = `${index + 1}. ${q.question.substring(0, 50)}${q.question.length > 50 ? '...' : ''} (Correct: ${correctAnsDisplay})`;
-                text.title = `Q: ${q.question}\nA: ${q.answers.join(', ')}\nCorrect: ${q.correctAnswer}`;
+                 const text = document.createElement('span');
+                 const correctAnsDisplay = q.correctAnswer.substring(0, 20) + (q.correctAnswer.length > 20 ? '...' : '');
+                 text.textContent = `${index + 1}. ${q.question.substring(0, 50)}${q.question.length > 50 ? '...' : ''} (Correct: ${correctAnsDisplay})`;
+                 text.title = `Q: ${q.question}\nA: ${q.answers.join(', ')}\nCorrect: ${q.correctAnswer}`;
 
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.classList.add('delete-btn');
-                deleteBtn.dataset.index = index;
-                deleteBtn.addEventListener('click', handleDeleteQuestion);
+                 const deleteBtn = document.createElement('button');
+                 deleteBtn.textContent = 'Delete';
+                 deleteBtn.classList.add('delete-btn');
+                 deleteBtn.dataset.index = index;
+                 deleteBtn.addEventListener('click', handleDeleteQuestion);
 
-                item.appendChild(text);
-                item.appendChild(deleteBtn);
-                managedQuestionsList.appendChild(item);
-            });
+                 item.appendChild(text);
+                 item.appendChild(deleteBtn);
+                 managedQuestionsList.appendChild(item);
+             });
         }
 
         function handleAddQuestion(event) {
             event.preventDefault();
 
             const questionText = newQuestionText.value.trim();
-            // Filter out empty answers *before* finding the correct one
             const potentialAnswers = answerInputs.map(input => input.value.trim());
             let correctAnswerIndex = -1;
              for (let i = 0; i < correctAnswerRadios.length; i++) {
                  if (correctAnswerRadios[i].checked) {
-                     // Check if the selected answer is actually non-empty
                      if (potentialAnswers[i]) {
                          correctAnswerIndex = i;
                      }
-                     break; // Only one can be checked
+                     break;
                  }
             }
 
-            // Filter only non-empty answers for the final list
             const finalAnswers = potentialAnswers.filter(answer => answer !== '');
 
-            // Validation
-            if (!questionText) {
-                showMessage("Please enter question text.", 2000); return;
-            }
-            if (finalAnswers.length < 2) {
-                showMessage("Please provide at least two non-empty answers.", 2000); return;
-            }
-             // Find the correct answer text *after* filtering empty ones
-             let correctAnswerText = '';
+            if (!questionText) { showMessage("Please enter question text.", 2000); return; }
+            if (finalAnswers.length < 2) { showMessage("Please provide at least two non-empty answers.", 2000); return; }
+
+            let correctAnswerText = '';
              if (correctAnswerIndex !== -1 && potentialAnswers[correctAnswerIndex]) {
                  correctAnswerText = potentialAnswers[correctAnswerIndex];
-                 // Ensure the selected correct answer is still present in the final filtered list
-                 if (!finalAnswers.includes(correctAnswerText)) {
-                      showMessage("The selected correct answer cannot be empty.", 2000); return;
-                 }
-             } else {
-                  showMessage("Please select a non-empty correct answer.", 2000); return;
-             }
-
+                 if (!finalAnswers.includes(correctAnswerText)) { showMessage("The selected correct answer cannot be empty.", 2000); return; }
+             } else { showMessage("Please select a non-empty correct answer.", 2000); return; }
 
             const newQuestion = {
                 question: questionText,
-                answers: finalAnswers, // Use the filtered list
-                correctAnswer: correctAnswerText, // Use the validated text
+                answers: finalAnswers,
+                correctAnswer: correctAnswerText,
                 colors: defaultColors.slice(0, finalAnswers.length)
             };
 
-            // Final validation check on the created object
-            if (!validateQuestions([newQuestion])) { // Validate the single new question in array format
+            if (!validateQuestions([newQuestion])) {
                  showMessage("Failed internal validation. Please check inputs.", 2000);
                  return;
             }
@@ -588,26 +597,28 @@
         // --- Event Listeners ---
         // Start Screen
         loadDefaultBtn.addEventListener('click', () => {
-            questions = JSON.parse(JSON.stringify(defaultQuestions));
-            showMessage("Default questions loaded.", 1500);
-            startQuiz();
+            questions = JSON.parse(JSON.stringify(defaultQuestions)); // Overwrite current questions
+            showMessage("Default questions loaded. Ready to start.", 2500);
+            // **Removed** startQuiz();
         });
-        importFileBtn.addEventListener('change', handleFileImport);
-        manageQuestionsBtn.addEventListener('click', showManageScreen);
+        importFileBtn.addEventListener('change', handleFileImport); // Imports, shows message
+        manageQuestionsBtn.addEventListener('click', showManageScreen); // Shows current questions
+        startQuizBtn.addEventListener('click', startQuiz); // New listener to start the quiz
 
         // Manage Screen
         addQuestionForm.addEventListener('submit', handleAddQuestion);
-        saveStartQuizBtn.addEventListener('click', startQuiz);
+        saveStartQuizBtn.addEventListener('click', startQuiz); // Uses current questions
+        exportManageBtn.addEventListener('click', exportCurrentQuestions);
         manageBackToMainBtn.addEventListener('click', showMainMenu);
 
         // Results Screen
-        exportBtn.addEventListener('click', exportQuestions);
-        restartBtn.addEventListener('click', startQuiz);
+        exportBtn.addEventListener('click', exportCurrentQuestions);
+        restartBtn.addEventListener('click', startQuiz); // Restarts with same questions
         mainMenuBtn.addEventListener('click', showMainMenu);
 
         // --- Initial State ---
         document.addEventListener('DOMContentLoaded', () => {
-            showMainMenu(); // Start at the main menu
+            showMainMenu();
         });
 
     </script>
